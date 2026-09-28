@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Rasio Keuangan — Interaktif</title>
+<style>
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --surface-2:#f6f8fa; --text:#0b0b0b; --text-2:#52514e;
+  --muted:#7b8794; --line:#e6eaef; --grid:#eef1f5; --header:#12233d; --header-2:#1c3557;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --good:#1baf7a; --bad:#e34948; --shadow:0 6px 22px rgba(20,40,70,.08);
+}
+html[data-theme="dark"]{
+  --bg:#0e0f12; --surface:#191a1d; --surface-2:#202124; --text:#f4f5f7; --text-2:#c3c2b7;
+  --muted:#8b93a1; --line:#2c2e33; --grid:#26282d; --header:#0a1524; --header-2:#132b47;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --good:#199e70; --bad:#e66767; --shadow:0 6px 22px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+.wrap{max-width:1320px;margin:0 auto;padding:0 20px 46px}
+header{background:linear-gradient(135deg,var(--header),var(--header-2));color:#fff;padding:26px 0 26px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden}
+header .hwrap{max-width:1320px;margin:0 auto;padding:0 20px;position:relative;z-index:2}
+header::after{content:"";position:absolute;right:-70px;top:-100px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(57,135,229,.34),transparent 66%)}
+.kick{font-size:12px;letter-spacing:3px;font-weight:700;color:#8fb4e6;text-transform:uppercase}
+h1{font-size:27px;font-weight:800;margin-top:5px;letter-spacing:-.3px}
+.sub{color:#b7c6da;font-size:13.5px;margin-top:6px}
+.toolbar{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 18px;margin-top:-22px;
+  box-shadow:var(--shadow);position:relative;z-index:5}
+.fg{display:flex;flex-direction:column;gap:8px}
+.fg .lbl{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--surface-2);color:var(--text-2);padding:7px 13px;border-radius:999px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;user-select:none}
+.pill:hover{border-color:var(--s1);color:var(--text)}
+.pill.active{background:var(--s1);border-color:var(--s1);color:#fff;box-shadow:0 3px 10px rgba(42,120,214,.32)}
+.pill.yr.active{background:var(--s4);border-color:var(--s4);color:#131313;box-shadow:0 3px 10px rgba(237,161,0,.3)}
+.right-tools{display:flex;gap:8px;align-items:center}
+.tgl{border:1px solid var(--line);background:var(--surface-2);color:var(--text-2);padding:8px 12px;border-radius:10px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.tgl:hover{border-color:var(--s1);color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:18px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;animation:pop .4s ease}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.kpi .cap{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
+.kpi .val{font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.5px;line-height:1.05}
+.kpi .unit{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi .dot{position:absolute;top:14px;right:14px;width:9px;height:9px;border-radius:50%}
+.kpi .delta{font-size:12px;font-weight:700;margin-top:7px}
+.up{color:var(--good)} .down{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px 12px;box-shadow:var(--shadow)}
+.card h3{font-size:15px;font-weight:700}
+.card .desc{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.col-6{grid-column:span 6} .col-4{grid-column:span 4} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
+.chart{width:100%;height:300px}.chart.tall{height:340px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;font-size:12px;color:var(--text-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+svg{display:block;width:100%;height:100%}
+.gl{stroke:var(--grid);stroke-width:1}
+.axtx{fill:var(--muted);font-size:11px;font-family:system-ui}
+.mkr{transition:r .15s} .mark:hover .mkr{r:7}
+.bar{transition:opacity .15s;cursor:pointer} .bar:hover{opacity:.82}
+.slice{transition:opacity .15s;cursor:pointer} .slice:hover{opacity:.85}
+#tt{position:fixed;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:8px 11px;font-size:12.5px;color:var(--text);box-shadow:var(--shadow);opacity:0;transition:opacity .1s;z-index:99;max-width:230px}
+#tt b{color:var(--text)} #tt .row{display:flex;justify-content:space-between;gap:14px;margin-top:3px}
+#tt .row i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px}
+table.tv{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+table.tv th,table.tv td{border:1px solid var(--line);padding:6px 8px;text-align:right}
+table.tv th{background:var(--surface-2);color:var(--text-2);font-weight:700}
+table.tv td:first-child,table.tv th:first-child{text-align:left}
+table.tv tr.induk td{background:var(--surface-2);font-weight:700}
+.hidden{display:none}
+.footer{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.65}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.col-6,.col-4,.col-8{grid-column:span 12}}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+  <div class="kick">PT Contoh Nusantara &nbsp;•&nbsp; Data Dummy (Rp juta)</div>
+  <h1>Dashboard Rasio Keuangan — Interaktif</h1>
+  <div class="sub">Konsolidasi Induk &amp; 3 Cabang · 2021–2025 · likuiditas · profitabilitas · turnover · solvabilitas</div>
+</div></header>
+<div class="wrap">
+  <div class="toolbar">
+    <div class="fg"><span class="lbl">Cabang</span><div class="pills" id="cabPills"></div></div>
+    <div class="fg"><span class="lbl">Tahun</span><div class="pills" id="yrPills"></div></div>
+    <div class="right-tools"><button class="tgl" id="tableBtn">▦ Tabel</button><button class="tgl" id="themeBtn">🌙 Gelap</button></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <div class="card col-8"><h3>Penjualan &amp; Laba Bersih</h3><div class="desc" id="d-combo"></div><div id="c-combo" class="chart tall"></div><div class="legend" id="l-combo"></div></div>
+    <div class="card col-4"><h3>Kontribusi Penjualan per Cabang</h3><div class="desc" id="d-donut"></div><div id="c-donut" class="chart tall"></div><div class="legend" id="l-donut"></div></div>
+    <div class="card col-6"><h3>Tren Profitabilitas</h3><div class="desc" id="d-profit"></div><div id="c-profit" class="chart"></div><div class="legend" id="l-profit"></div></div>
+    <div class="card col-6"><h3>Tren Likuiditas &amp; Solvabilitas</h3><div class="desc" id="d-liq"></div><div id="c-liq" class="chart"></div><div class="legend" id="l-liq"></div></div>
+    <div class="card col-4"><h3>Produk Terlaris</h3><div class="desc" id="d-prod"></div><div id="c-prod" class="chart tall"></div></div>
+    <div class="card col-4"><h3>Profil Rasio per Cabang</h3><div class="desc" id="d-radar"></div><div id="c-radar" class="chart tall"></div><div class="legend" id="l-radar"></div></div>
+    <div class="card col-4"><h3>Net Profit Margin per Cabang</h3><div class="desc" id="d-npm"></div><div id="c-npm" class="chart tall"></div></div>
+    <div class="card col-12 hidden" id="tableCard"><h3>Tabel Rasio — Induk &amp; Cabang</h3><div class="desc" id="d-table"></div><div id="tableHost"></div></div>
+  </div>
+  <div class="footer" id="footer"></div>
+</div>
+<div id="tt"></div>
+<script>
+// ================= DATA (identik dengan model Excel) =================
+const branches=["Cabang Jakarta","Cabang Surabaya","Cabang Medan"];
+const shortName={"Cabang Jakarta":"Jakarta","Cabang Surabaya":"Surabaya","Cabang Medan":"Medan"};
+const years=[2021,2022,2023,2024,2025];
+const products=["Mesin Utama","Suku Cadang","Aksesoris","Layanan Servis","Konsumabel"];
+const price={"Mesin Utama":50,"Suku Cadang":5,"Aksesoris":1,"Layanan Servis":10,"Konsumabel":0.5};
+const pmg={"Mesin Utama":0.28,"Suku Cadang":0.35,"Aksesoris":0.40,"Layanan Servis":0.55,"Konsumabel":0.25};
+const P={
+ "Cabang Jakarta":{base:12000,g:1.11,hpp0:0.72,opex:0.13,bunga:0.010,kas:0.10,piut:0.14,pers:0.16,at:0.38,ul:0.18,ujp:0.20,mix:[0.30,0.25,0.20,0.15,0.10]},
+ "Cabang Surabaya":{base:8000,g:1.09,hpp0:0.75,opex:0.14,bunga:0.015,kas:0.06,piut:0.16,pers:0.20,at:0.42,ul:0.24,ujp:0.28,mix:[0.20,0.30,0.25,0.15,0.10]},
+ "Cabang Medan":{base:5000,g:1.08,hpp0:0.68,opex:0.15,bunga:0.012,kas:0.09,piut:0.13,pers:0.15,at:0.50,ul:0.17,ujp:0.30,mix:[0.35,0.15,0.20,0.20,0.10]},
+};
+const R=Math.round, fin={}, prod={};
+branches.forEach(b=>{fin[b]={};prod[b]={};const p=P[b];
+  years.forEach((yr,i)=>{const pen=R(p.base*Math.pow(p.g,i));
+    const hpp=R(pen*(p.hpp0-0.004*i)),opex=R(pen*p.opex),bunga=R(pen*p.bunga);
+    const kas=R(pen*p.kas),piut=R(pen*p.piut),pers=R(pen*p.pers),at=R(pen*p.at),ul=R(pen*p.ul),ujp=R(pen*p.ujp);
+    const lk=pen-hpp,ebit=lk-opex,lsp=ebit-bunga,pajak=lsp*0.22,laba=lsp-pajak,al=kas+piut+pers,ta=al+at,tl=ul+ujp,eq=ta-tl;
+    fin[b][yr]={pen,hpp,opex,bunga,kas,piut,pers,at,ul,ujp,lk,ebit,lsp,pajak,laba,al,ta,tl,eq};
+    prod[b][yr]=products.map((pr,j)=>{const nilai=R(pen*p.mix[j]),lkp=nilai*pmg[pr];
+      return{prod:pr,nilai,unit:R(nilai/price[pr]),margin:pmg[pr],lk:lkp,laba:lkp*0.78};});
+  });});
+function agg(cab,yr){const set=cab==="Induk"?branches:[cab];
+  const o={pen:0,hpp:0,opex:0,bunga:0,kas:0,piut:0,pers:0,at:0,ul:0,ujp:0,lk:0,ebit:0,lsp:0,pajak:0,laba:0,al:0,ta:0,tl:0,eq:0};
+  set.forEach(b=>{const f=fin[b][yr];for(const k in o)o[k]+=f[k];});return o;}
+function prodAgg(cab,yr){const set=cab==="Induk"?branches:[cab];
+  return products.map(pr=>{let nilai=0,laba=0,unit=0;set.forEach(b=>{const r=prod[b][yr].find(x=>x.prod===pr);nilai+=r.nilai;laba+=r.laba;unit+=r.unit;});
+    return{prod:pr,nilai:R(nilai),laba:R(laba),unit:R(unit)};});}
+function ratios(f){return{current:f.al/f.ul,quick:(f.al-f.pers)/f.ul,npm:f.laba/f.pen,gpm:f.lk/f.pen,
+  roa:f.laba/f.ta,roe:f.laba/f.eq,ato:f.pen/f.ta,ito:f.hpp/f.pers,rto:f.pen/f.piut,der:f.tl/f.eq,dar:f.tl/f.ta};}
+
+// ================= STATE =================
+const state={cab:"Induk",yr:2025,table:false,theme:"light"};
+const entities=["Induk",...branches];
+const brVar={"Cabang Jakarta":"--s1","Cabang Surabaya":"--s2","Cabang Medan":"--s3"};
+const prVar={"Mesin Utama":"--s1","Suku Cadang":"--s2","Aksesoris":"--s3","Layanan Servis":"--s4","Konsumabel":"--s5"};
+function cvar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+// ================= FORMAT =================
+function rp(v){return Math.abs(v)>=1000?"Rp "+(v/1000).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+" M":"Rp "+Math.round(v).toLocaleString('id-ID')+" jt";}
+function num(v){return Math.round(v).toLocaleString('id-ID');}
+function pct(v){return (v*100).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+"%";}
+function xr(v){return v.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+"×";}
+
+// ================= SVG HELPERS =================
+const NS="http://www.w3.org/2000/svg";
+function E(tag,at,kids){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);
+  (kids||[]).forEach(c=>e.appendChild(c));return e;}
+function txt(x,y,s,cls,anchor,extra){const t=E("text",Object.assign({x,y,class:cls||"axtx","text-anchor":anchor||"middle"},extra||{}));t.textContent=s;return t;}
+function svgHost(id,w,h){const host=document.getElementById(id);host.innerHTML="";
+  const s=E("svg",{viewBox:`0 0 ${w} ${h}`,preserveAspectRatio:"xMidYMid meet"});host.appendChild(s);return s;}
+function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;
+  const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return n*e;}
+function smooth(pts){if(pts.length<2)return "";let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+    const c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6,c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=`C${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;}return d;}
+const TT=document.getElementById('tt');
+function tipShow(html,ev){TT.innerHTML=html;TT.style.opacity=1;tipMove(ev);}
+function tipMove(ev){const pad=14;let x=ev.clientX+pad,y=ev.clientY+pad;
+  const r=TT.getBoundingClientRect();if(x+r.width>innerWidth)x=ev.clientX-r.width-pad;if(y+r.height>innerHeight)y=ev.clientY-r.height-pad;
+  TT.style.left=x+'px';TT.style.top=y+'px';}
+function tipHide(){TT.style.opacity=0;}
+function hoverable(el,html){el.addEventListener('mousemove',e=>tipShow(html,e));el.addEventListener('mouseleave',tipHide);}
+function legend(id,items){document.getElementById(id).innerHTML=items.map(it=>`<span><i style="background:${it.c}"></i>${it.n}</span>`).join('');}
+
+// ================= CHART: LINE (multi-series) =================
+function lineChart(id,{cats,series,yfmt,ymin=0,areaFirst=false,dataLabelIdx=-1}){
+  const W=560,H=cats.length?300:300,mL=52,mR=16,mT=14,mB=34;
+  const s=svgHost(id,W,H);const pw=W-mL-mR,ph=H-mT-mB;
+  let max=0;series.forEach(se=>se.data.forEach(v=>{if(v>max)max=v;}));max=niceMax(max*1.08)||1;
+  const X=i=>mL+(cats.length===1?pw/2:pw*i/(cats.length-1));
+  const Y=v=>mT+ph-(v-ymin)/(max-ymin)*ph;
+  for(let t=0;t<=4;t++){const v=ymin+(max-ymin)*t/4,y=Y(v);
+    s.appendChild(E("line",{x1:mL,y1:y,x2:W-mR,y2:y,class:"gl"}));
+    s.appendChild(txt(mL-8,y+4,yfmt(v),"axtx","end"));}
+  cats.forEach((c,i)=>s.appendChild(txt(X(i),H-12,c,"axtx","middle")));
+  series.forEach((se,si)=>{const col=cvar(se.c);const pts=se.data.map((v,i)=>[X(i),Y(v)]);
+    if(areaFirst&&si===0){const gid=id+"g";const def=E("defs");def.appendChild(E("linearGradient",{id:gid,x1:0,y1:0,x2:0,y2:1},
+      [E("stop",{offset:"0%","stop-color":col,"stop-opacity":.28}),E("stop",{offset:"100%","stop-color":col,"stop-opacity":.02})]));s.appendChild(def);
+      const ap=smooth(pts)+`L${X(cats.length-1)},${mT+ph}L${X(0)},${mT+ph}Z`;s.appendChild(E("path",{d:ap,fill:`url(#${gid})`}));}
+    s.appendChild(E("path",{d:smooth(pts),fill:"none",stroke:col,"stroke-width":3,"stroke-linecap":"round","stroke-linejoin":"round"}));
+    pts.forEach((p,i)=>{const g=E("g",{class:"mark"});g.appendChild(E("circle",{cx:p[0],cy:p[1],r:12,fill:"transparent"}));
+      g.appendChild(E("circle",{cx:p[0],cy:p[1],r:4.5,class:"mkr",fill:cvar('--surface'),stroke:col,"stroke-width":2.5}));
+      hoverable(g,`<b>${cats[i]}</b><div class="row"><span><i style="background:${col}"></i>${se.n}</span><b>${se.fmt(se.data[i])}</b></div>`);
+      s.appendChild(g);
+      if(si===dataLabelIdx)s.appendChild(txt(p[0],p[1]-11,se.fmt(se.data[i]),"axtx","middle",{fill:cvar('--text-2'),"font-weight":700}));});
+  });
+}
+
+// ================= CHART: COMBO (bars + line, one axis) =================
+function comboChart(id,{cats,bar,line}){
+  const W=680,H=326,mL=58,mR=16,mT=16,mB=34;const s=svgHost(id,W,H);const pw=W-mL-mR,ph=H-mT-mB;
+  let max=Math.max(...bar.data,...line.data);max=niceMax(max*1.08);
+  const band=pw/cats.length,bw=band*0.5;
+  const Y=v=>mT+ph-v/max*ph;const bcol=cvar(bar.c),lcol=cvar(line.c);
+  for(let t=0;t<=4;t++){const v=max*t/4,y=Y(v);s.appendChild(E("line",{x1:mL,y1:y,x2:W-mR,y2:y,class:"gl"}));
+    s.appendChild(txt(mL-8,y+4,num(v),"axtx","end"));}
+  const def=E("defs");const gid=id+"bg";def.appendChild(E("linearGradient",{id:gid,x1:0,y1:0,x2:0,y2:1},
+    [E("stop",{offset:"0%","stop-color":bcol}),E("stop",{offset:"100%","stop-color":bcol,"stop-opacity":.72})]));s.appendChild(def);
+  cats.forEach((c,i)=>{const cx=mL+band*i+band/2;
+    const h=bar.data[i]/max*ph,y=Y(bar.data[i]);
+    const rect=E("rect",{x:cx-bw/2,y,width:bw,height:Math.max(h,0.5),rx:5,fill:`url(#${gid})`,class:"bar"});
+    hoverable(rect,`<b>${c}</b><div class="row"><span><i style="background:${bcol}"></i>${bar.n}</span><b>${rp(bar.data[i])}</b></div><div class="row"><span><i style="background:${lcol}"></i>${line.n}</span><b>${rp(line.data[i])}</b></div>`);
+    s.appendChild(rect);s.appendChild(txt(cx,H-12,c,"axtx","middle"));});
+  const pts=line.data.map((v,i)=>[mL+band*i+band/2,Y(v)]);
+  s.appendChild(E("path",{d:smooth(pts),fill:"none",stroke:lcol,"stroke-width":3,"stroke-linecap":"round"}));
+  pts.forEach((p,i)=>{s.appendChild(E("circle",{cx:p[0],cy:p[1],r:4.5,fill:cvar('--surface'),stroke:lcol,"stroke-width":2.5}));
+    s.appendChild(txt(p[0],p[1]-10,num(line.data[i]),"axtx","middle",{fill:cvar('--text-2'),"font-weight":700}));});
+}
+
+// ================= CHART: BAR VERTICAL =================
+function barV(id,{cats,data,fmt,colorFor,pctAxis=false}){
+  const W=360,H=326,mL=46,mR=12,mT=16,mB=34;const s=svgHost(id,W,H);const pw=W-mL-mR,ph=H-mT-mB;
+  let max=niceMax(Math.max(...data)*1.14);const band=pw/cats.length,bw=Math.min(band*0.5,54);const Y=v=>mT+ph-v/max*ph;
+  for(let t=0;t<=4;t++){const v=max*t/4,y=Y(v);s.appendChild(E("line",{x1:mL,y1:y,x2:W-mR,y2:y,class:"gl"}));
+    s.appendChild(txt(mL-8,y+4,pctAxis?(v*100).toFixed(0)+"%":fmt(v),"axtx","end"));}
+  cats.forEach((c,i)=>{const cx=mL+band*i+band/2,h=data[i]/max*ph,y=Y(data[i]),col=cvar(colorFor(i));
+    const g=E("defs"),gid=id+i;g.appendChild(E("linearGradient",{id:gid,x1:0,y1:0,x2:0,y2:1},
+      [E("stop",{offset:"0%","stop-color":col}),E("stop",{offset:"100%","stop-color":col,"stop-opacity":.75})]));s.appendChild(g);
+    const r=E("rect",{x:cx-bw/2,y,width:bw,height:Math.max(h,.5),rx:6,fill:`url(#${gid})`,class:"bar"});
+    hoverable(r,`<b>${c}</b><div class="row"><b>${fmt(data[i])}</b></div>`);s.appendChild(r);
+    s.appendChild(txt(cx,y-8,fmt(data[i]),"axtx","middle",{fill:cvar('--text-2'),"font-weight":700}));
+    s.appendChild(txt(cx,H-12,c,"axtx","middle"));});
+}
+
+// ================= CHART: BAR HORIZONTAL =================
+function barH(id,{rows,fmt}){
+  const W=360,H=326,mL=8,mR=54,mT=10,mB=10;const s=svgHost(id,W,H);const pw=W-mL-mR-88,ph=H-mT-mB;
+  const labelX=mL+84;let max=niceMax(Math.max(...rows.map(r=>r.v))*1.02);const band=ph/rows.length,bh=Math.min(band*0.62,30);
+  rows.forEach((r,i)=>{const cy=mT+band*i+band/2,w=r.v/max*pw,col=cvar(r.c);
+    s.appendChild(txt(labelX-8,cy+4,r.n,"axtx","end"));
+    const def=E("defs"),gid=id+i;def.appendChild(E("linearGradient",{id:gid,x1:0,y1:0,x2:1,y2:0},
+      [E("stop",{offset:"0%","stop-color":col,"stop-opacity":.78}),E("stop",{offset:"100%","stop-color":col})]));s.appendChild(def);
+    const rect=E("rect",{x:labelX,y:cy-bh/2,width:Math.max(w,.5),height:bh,rx:5,fill:`url(#${gid})`,class:"bar"});
+    hoverable(rect,`<b>${r.n}</b><div class="row"><b>${fmt(r.v)}</b></div>`);s.appendChild(rect);
+    s.appendChild(txt(labelX+w+7,cy+4,num(r.v),"axtx","start",{fill:cvar('--text-2'),"font-weight":700}));});
+}
+
+// ================= CHART: DONUT =================
+function donut(id,{data,centerTop,centerBot}){
+  const W=340,H=330,cx=W/2,cy=150,rO=112,rI=70;const s=svgHost(id,W,H);
+  const total=data.reduce((a,d)=>a+d.v,0);let ang=-Math.PI/2;
+  data.forEach(d=>{const frac=d.v/total,a2=ang+frac*Math.PI*2,col=cvar(d.c);
+    const large=frac>0.5?1:0;const x1=cx+rO*Math.cos(ang),y1=cy+rO*Math.sin(ang),x2=cx+rO*Math.cos(a2),y2=cy+rO*Math.sin(a2);
+    const xi2=cx+rI*Math.cos(a2),yi2=cy+rI*Math.sin(a2),xi1=cx+rI*Math.cos(ang),yi1=cy+rI*Math.sin(ang);
+    const path=E("path",{d:`M${x1},${y1} A${rO},${rO} 0 ${large} 1 ${x2},${y2} L${xi2},${yi2} A${rI},${rI} 0 ${large} 0 ${xi1},${yi1} Z`,
+      fill:col,class:"slice",stroke:cvar('--surface'),"stroke-width":3});
+    hoverable(path,`<b>${d.n}</b><div class="row"><span><i style="background:${col}"></i>${(frac*100).toFixed(1)}%</span><b>${rp(d.v)}</b></div>`);
+    s.appendChild(path);
+    const mid=(ang+a2)/2,lr=(rO+rI)/2;s.appendChild(txt(cx+lr*Math.cos(mid),cy+lr*Math.sin(mid)+4,(frac*100).toFixed(0)+"%","axtx","middle",{fill:"#fff","font-weight":700,"font-size":12}));
+    ang=a2;});
+  s.appendChild(txt(cx,cy-4,centerTop,"axtx","middle",{fill:cvar('--muted'),"font-size":11}));
+  s.appendChild(txt(cx,cy+15,centerBot,"axtx","middle",{fill:cvar('--text'),"font-weight":800,"font-size":15}));
+}
+
+// ================= CHART: RADAR =================
+function radar(id,{inds,series}){
+  const W=360,H=330,cx=W/2,cy=150,rad=104;const s=svgHost(id,W,H);const n=inds.length;
+  const ang=i=>-Math.PI/2+i*2*Math.PI/n;
+  for(let g=1;g<=4;g++){const rr=rad*g/4;let d="";for(let i=0;i<n;i++){const x=cx+rr*Math.cos(ang(i)),y=cy+rr*Math.sin(ang(i));d+=(i?"L":"M")+x+","+y;}d+="Z";
+    s.appendChild(E("path",{d,fill:"none",stroke:cvar('--grid'),"stroke-width":1}));}
+  inds.forEach((ind,i)=>{const x=cx+rad*Math.cos(ang(i)),y=cy+rad*Math.sin(ang(i));
+    s.appendChild(E("line",{x1:cx,y1:cy,x2:x,y2:y,stroke:cvar('--grid'),"stroke-width":1}));
+    const lx=cx+(rad+16)*Math.cos(ang(i)),ly=cy+(rad+16)*Math.sin(ang(i));
+    s.appendChild(txt(lx,ly+3,ind.name,"axtx",Math.abs(Math.cos(ang(i)))<0.3?"middle":(Math.cos(ang(i))>0?"start":"end"),{"font-size":10}));});
+  series.forEach(se=>{const col=cvar(se.c);let d="";const pts=[];
+    se.values.forEach((v,i)=>{const fr=Math.max(0,Math.min(1,v/inds[i].max)),x=cx+rad*fr*Math.cos(ang(i)),y=cy+rad*fr*Math.sin(ang(i));pts.push([x,y]);d+=(i?"L":"M")+x+","+y;});d+="Z";
+    s.appendChild(E("path",{d,fill:col,"fill-opacity":.14,stroke:col,"stroke-width":2.5}));
+    pts.forEach((p,i)=>{const g=E("g");g.appendChild(E("circle",{cx:p[0],cy:p[1],r:9,fill:"transparent"}));
+      g.appendChild(E("circle",{cx:p[0],cy:p[1],r:3.5,fill:col}));
+      hoverable(g,`<b>${se.n}</b><div class="row"><span>${inds[i].name}</span><b>${inds[i].fmt(se.values[i])}</b></div>`);s.appendChild(g);});});
+}
+
+// ================= RENDERERS =================
+function renderKPIs(){
+  const f=agg(state.cab,state.yr),r=ratios(f),prev=state.yr>2021?agg(state.cab,state.yr-1):null;
+  const dPen=prev?f.pen/prev.pen-1:null,dLaba=prev?f.laba/prev.laba-1:null;
+  const T=[
+   {c:"Penjualan",v:rp(f.pen),u:"total tahun terpilih",dot:'--s1',d:dPen},
+   {c:"Laba Bersih",v:rp(f.laba),u:"setelah pajak",dot:'--s3',d:dLaba},
+   {c:"Net Profit Margin",v:pct(r.npm),u:"profitabilitas",dot:'--s2',d:null},
+   {c:"Current Ratio",v:xr(r.current),u:"likuiditas",dot:'--s4',d:null},
+   {c:"Asset Turnover",v:xr(r.ato),u:"aktivitas",dot:'--s5',d:null},
+   {c:"DER",v:xr(r.der),u:"solvabilitas",dot:'--s1',d:null},
+  ];
+  document.getElementById('kpis').innerHTML=T.map(t=>{let d="";if(t.d!==null){const up=t.d>=0;d=`<div class="delta ${up?'up':'down'}">${up?'▲':'▼'} ${pct(Math.abs(t.d))} vs ${state.yr-1}</div>`;}
+    return `<div class="kpi"><span class="dot" style="background:${cvar(t.dot)}"></span><div class="cap">${t.c}</div><div class="val">${t.v}</div><div class="unit">${t.u}</div>${d}</div>`;}).join('');
+}
+function renderCombo(){
+  document.getElementById('d-combo').textContent=`${state.cab} · 5 tahun · satu sumbu (Rp juta)`;
+  comboChart('c-combo',{cats:years.map(String),
+    bar:{n:'Penjualan',c:'--s1',data:years.map(y=>agg(state.cab,y).pen)},
+    line:{n:'Laba Bersih',c:'--s2',data:years.map(y=>agg(state.cab,y).laba)}});
+  legend('l-combo',[{n:'Penjualan',c:cvar('--s1')},{n:'Laba Bersih',c:cvar('--s2')}]);
+}
+function renderDonut(){
+  const data=branches.map(b=>({n:shortName[b],v:agg(b,state.yr).pen,c:brVar[b]}));const tot=data.reduce((a,d)=>a+d.v,0);
+  document.getElementById('d-donut').textContent=`Tahun ${state.yr} · total ${rp(tot)}`;
+  donut('c-donut',{data,centerTop:'Total',centerBot:rp(tot)});
+  legend('l-donut',data.map(d=>({n:d.n,c:cvar(d.c)})));
+}
+function renderProfit(){
+  document.getElementById('d-profit').textContent=`${state.cab} · satuan % · satu sumbu`;
+  lineChart('c-profit',{cats:years.map(String),yfmt:v=>(v*100).toFixed(0)+"%",areaFirst:true,dataLabelIdx:1,
+    series:[{n:'Gross Margin',c:'--s1',data:years.map(y=>ratios(agg(state.cab,y)).gpm),fmt:pct},
+            {n:'Net Profit Margin',c:'--s3',data:years.map(y=>ratios(agg(state.cab,y)).npm),fmt:pct}]});
+  legend('l-profit',[{n:'Gross Margin',c:cvar('--s1')},{n:'Net Profit Margin',c:cvar('--s3')}]);
+}
+function renderLiq(){
+  document.getElementById('d-liq').textContent=`${state.cab} · satuan × (kali) · satu sumbu`;
+  lineChart('c-liq',{cats:years.map(String),yfmt:v=>v.toFixed(1)+"×",
+    series:[{n:'Current Ratio',c:'--s1',data:years.map(y=>ratios(agg(state.cab,y)).current),fmt:xr},
+            {n:'Quick Ratio',c:'--s3',data:years.map(y=>ratios(agg(state.cab,y)).quick),fmt:xr},
+            {n:'DER',c:'--s2',data:years.map(y=>ratios(agg(state.cab,y)).der),fmt:xr}]});
+  legend('l-liq',[{n:'Current Ratio',c:cvar('--s1')},{n:'Quick Ratio',c:cvar('--s3')},{n:'DER',c:cvar('--s2')}]);
+}
+function renderProd(){
+  const d=prodAgg(state.cab,state.yr).slice().sort((a,b)=>b.nilai-a.nilai);
+  document.getElementById('d-prod').textContent=`${state.cab} · ${state.yr} · nilai penjualan (Rp juta)`;
+  barH('c-prod',{fmt:rp,rows:d.map(x=>({n:x.prod,v:x.nilai,c:prVar[x.prod]}))});
+}
+function renderRadar(){
+  const inds=[{name:'Current',max:3,fmt:xr},{name:'Quick',max:2.5,fmt:xr},{name:'NPM',max:0.2,fmt:pct},
+              {name:'Asset TO',max:1.6,fmt:xr},{name:'Inv TO',max:6,fmt:xr},{name:'Gross',max:0.4,fmt:pct}];
+  document.getElementById('d-radar').textContent=`Tahun ${state.yr} · perbandingan 3 cabang`;
+  radar('c-radar',{inds,series:branches.map(b=>{const r=ratios(agg(b,state.yr));
+    return{n:shortName[b],c:brVar[b],values:[r.current,r.quick,r.npm,r.ato,r.ito,r.gpm]};})});
+  legend('l-radar',branches.map(b=>({n:shortName[b],c:cvar(brVar[b])})));
+}
+function renderNpm(){
+  document.getElementById('d-npm').textContent=`Tahun ${state.yr} · % · warna per cabang`;
+  barV('c-npm',{cats:branches.map(b=>shortName[b]),data:branches.map(b=>ratios(agg(b,state.yr)).npm),
+    fmt:pct,pctAxis:true,colorFor:i=>brVar[branches[i]]});
+}
+function renderTable(){
+  const rows=entities.map(e=>{const r=ratios(agg(e,state.yr)),cls=e==="Induk"?' class="induk"':'';
+    return `<tr${cls}><td>${e}</td><td>${xr(r.current)}</td><td>${xr(r.quick)}</td><td>${pct(r.npm)}</td><td>${pct(r.gpm)}</td><td>${pct(r.roa)}</td><td>${pct(r.roe)}</td><td>${xr(r.ato)}</td><td>${xr(r.ito)}</td><td>${xr(r.der)}</td><td>${pct(r.dar)}</td></tr>`;}).join('');
+  document.getElementById('d-table').textContent=`Tahun ${state.yr} · nilai eksplisit (accessibility)`;
+  document.getElementById('tableHost').innerHTML=`<table class="tv"><thead><tr><th>Entitas</th><th>Current</th><th>Quick</th><th>NPM</th><th>Gross</th><th>ROA</th><th>ROE</th><th>Asset TO</th><th>Inv TO</th><th>DER</th><th>DAR</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderAll(){renderKPIs();renderCombo();renderDonut();renderProfit();renderLiq();renderProd();renderRadar();renderNpm();renderTable();
+  document.getElementById('footer').innerHTML=`Filter aktif: <b>${state.cab}</b> · Tahun <b>${state.yr}</b>. Grafik tren menampilkan 5 tahun untuk cabang terpilih; doughnut, radar, produk & NPM-per-cabang mengikuti tahun terpilih. Arahkan kursor ke grafik untuk detail (tooltip). Tombol <b>Tabel</b> menampilkan angka eksplisit. Palet warna sudah divalidasi <b>colorblind-safe</b>. Semua data <b>dummy</b> — sama persis dengan file Excel.`;
+}
+
+// ================= EVENTS =================
+function buildPills(){
+  document.getElementById('cabPills').innerHTML=entities.map(e=>`<span class="pill${e===state.cab?' active':''}" data-cab="${e}">${e}</span>`).join('');
+  document.getElementById('yrPills').innerHTML=years.map(y=>`<span class="pill yr${y===state.yr?' active':''}" data-yr="${y}">${y}</span>`).join('');
+  document.querySelectorAll('[data-cab]').forEach(el=>el.onclick=()=>{state.cab=el.dataset.cab;buildPills();renderAll();});
+  document.querySelectorAll('[data-yr]').forEach(el=>el.onclick=()=>{state.yr=+el.dataset.yr;buildPills();renderAll();});
+}
+document.getElementById('themeBtn').onclick=function(){state.theme=state.theme==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',state.theme);this.textContent=state.theme==='light'?'🌙 Gelap':'☀️ Terang';renderAll();};
+document.getElementById('tableBtn').onclick=function(){state.table=!state.table;
+  document.getElementById('tableCard').classList.toggle('hidden',!state.table);
+  this.style.background=state.table?cvar('--s1'):'';this.style.color=state.table?'#fff':'';};
+buildPills();renderAll();
+</script>
+</body>
+</html>
